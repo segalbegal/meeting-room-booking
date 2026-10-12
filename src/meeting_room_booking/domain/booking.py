@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from meeting_room_booking.domain.clock import Clock
 from meeting_room_booking.domain.errors import InvalidBookingDurationError, InvalidBookingStartTimeError, InvalidBookingTimesError, InvalidBookingTimezoneError, InvalidOrganizerEmailError
 
 
@@ -35,11 +36,13 @@ class Booking(BaseModel):
     def __post_init__(self) -> None:
         if not has_timezone(self.start) or not has_timezone(self.end):
             raise InvalidBookingTimezoneError()
-        if self.start < datetime.now(): # TODO: Inject a clock to make this testable
-            raise InvalidBookingStartTimeError(self.start)
         if self.start >= self.end:
             raise InvalidBookingTimesError(self.start, self.end)
         if self.end - self.start > MAXIMUM_BOOKING_DURATION or self.end - self.start < MINIMUM_BOOKING_DURATION:
             raise InvalidBookingDurationError(self.start, self.end)
         if self.organizer_email and "@" not in self.organizer_email:
             raise InvalidOrganizerEmailError(self.organizer_email)
+
+    def validate_start_not_in_past(self, clock: Clock) -> None:
+        if self.start < clock.now():
+            raise InvalidBookingStartTimeError(self.start)

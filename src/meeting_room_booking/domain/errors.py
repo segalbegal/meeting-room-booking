@@ -1,7 +1,6 @@
 from datetime import datetime
 from uuid import UUID
 
-from meeting_room_booking.domain.booking import MAXIMUM_BOOKING_DURATION, MINIMUM_BOOKING_DURATION
 
 
 class DomainError(Exception):
@@ -30,6 +29,8 @@ class InvalidBookingTimesError(DomainError):
 
 class InvalidBookingDurationError(DomainError):
     def __init__(self, start_time: datetime, end_time: datetime) -> None:
+        from meeting_room_booking.domain.booking import MAXIMUM_BOOKING_DURATION, MINIMUM_BOOKING_DURATION
+
         super().__init__(f"Invalid booking duration: booking duration from {start_time} to {end_time} is not within the allowed range ({MINIMUM_BOOKING_DURATION} to {MAXIMUM_BOOKING_DURATION})")
 
 

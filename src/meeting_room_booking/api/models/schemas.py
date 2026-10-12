@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Iterator
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -10,26 +10,28 @@ class BookingStatus(str, Enum):
     cancelled = "cancelled"
 
 
-class RoomsPage(BaseModel):
-    rooms: Iterator[Room]
-    total: int
-
-
 class Room(BaseModel):
-    id: int
+    id: UUID
     name: str
     capacity: int
 
 
 class BookingCreate(BaseModel):
-    room_id: int
-    title: str
+    room_id: UUID
+    title: str | None
     organizer_email: str
     start: datetime
     end: datetime
 
 
 class Booking(BookingCreate):
-    id: int
+    id: UUID
     status: BookingStatus = BookingStatus.active
     created_at: datetime
+
+
+class BookingsPage(BaseModel):
+    bookings: list[Booking]
+    total: int
+    limit: int
+    offset: int
