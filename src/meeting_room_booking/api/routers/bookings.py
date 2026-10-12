@@ -1,7 +1,7 @@
+from typing import Iterator
+
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/bookings", tags=["bookings"])
+from meeting_room_booking.domain.booking import Booking
 
-@router.get("")
-def get_bookings() -> list[dict]:
-    return [{"message": "List of bookings"}]
+router = APIRouter(prefix="/bookings", tags=["bookings"])
