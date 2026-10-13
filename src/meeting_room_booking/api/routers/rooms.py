@@ -9,6 +9,10 @@ from meeting_room_booking.api.dependencies import BookingsRepositoryDep, RoomsRe
 from meeting_room_booking.api.models import schemas
 from meeting_room_booking.application import booking_service
 
+
+ROOM_BOOKINGS_MIN: int = 1
+ROOM_BOOKINGS_MAX: int = 100
+
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
@@ -24,7 +28,7 @@ async def list_room_bookings(
     bookings: BookingsRepositoryDep,
     from_: Annotated[AwareDatetime | None, Query(alias="from")] = None,
     to: AwareDatetime | None = None,
-    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    limit: Annotated[int, Query(ge=ROOM_BOOKINGS_MIN, le=ROOM_BOOKINGS_MAX)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> schemas.BookingsPage:
     if await rooms.get_by_id(room_id) is None:
