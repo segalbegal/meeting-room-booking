@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
-from uuid import UUID, uuid4
+from typing import Any
+from uuid import UUID
 
 import pytest
 
@@ -12,6 +13,7 @@ from meeting_room_booking.infrastructure.json_rooms_source import JsonFileRoomsS
 from meeting_room_booking.infrastructure.system_clock import SystemClock
 from meeting_room_booking.main import DEFAULT_ROOMS_FILE
 from tests.conftest import BookingFactory
+from tests.helpers import cases
 
 
 def test_to_room(room: Room) -> None:
@@ -31,19 +33,22 @@ def test_to_booking_maps_all_fields_and_status(make_booking: BookingFactory) -> 
     assert dto.status is schemas.BookingStatus.cancelled
 
 
-async def test_json_source_loads_rooms(tmp_path: Path) -> None:
-    room_id = uuid4()
+def _write_source(tmp_path: Path, sample: dict[str, Any]) -> JsonFileRoomsSource:
     path = tmp_path / "rooms.json"
-    path.write_text(json.dumps([{"id": str(room_id), "name": "A", "capacity": 4}]), encoding="utf-8")
-    rooms = await JsonFileRoomsSource(path).load()
-    assert rooms == [Room(id=room_id, name="A", capacity=4)]
+    path.write_text(json.dumps([sample]), encoding="utf-8")
+    return JsonFileRoomsSource(path)
 
 
-async def test_json_source_rejects_invalid_capacity(tmp_path: Path) -> None:
-    path = tmp_path / "rooms.json"
-    path.write_text(json.dumps([{"id": str(uuid4()), "name": "A", "capacity": 0}]), encoding="utf-8")
+@pytest.mark.parametrize("sample", cases("rooms_valid.json"))
+async def test_json_source_loads_valid_room(tmp_path: Path, sample: dict[str, Any]) -> None:
+    rooms = await _write_source(tmp_path, sample).load()
+    assert rooms == [Room(id=UUID(sample["id"]), name=sample["name"], capacity=sample["capacity"])]
+
+
+@pytest.mark.parametrize("sample", cases("rooms_invalid.json"))
+async def test_json_source_rejects_invalid_room(tmp_path: Path, sample: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
-        await JsonFileRoomsSource(path).load()
+        await _write_source(tmp_path, sample).load()
 
 
 async def test_json_source_missing_file_raises(tmp_path: Path) -> None:
@@ -55,7 +60,6 @@ async def test_bundled_rooms_file_is_valid() -> None:
     rooms = await JsonFileRoomsSource(DEFAULT_ROOMS_FILE).load()
     assert len(rooms) == 5
     assert len({r.id for r in rooms}) == 5
-    assert all(isinstance(r.id, UUID) for r in rooms)
 
 
 def test_system_clock_returns_aware_utc_time() -> None:

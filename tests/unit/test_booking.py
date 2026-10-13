@@ -1,21 +1,12 @@
 from datetime import UTC, datetime, timedelta, timezone
+from typing import Any
 
 import pytest
 
-from meeting_room_booking.domain.booking import (
-    MAXIMUM_BOOKING_DURATION,
-    MINIMUM_BOOKING_DURATION,
-    BookingStatus,
-    has_timezone,
-)
-from meeting_room_booking.domain.errors import (
-    InvalidBookingDurationError,
-    InvalidBookingStartTimeError,
-    InvalidBookingTimesError,
-    InvalidBookingTimezoneError,
-    InvalidOrganizerEmailError,
-)
+from meeting_room_booking.domain.booking import BookingStatus, has_timezone
+from meeting_room_booking.domain.errors import InvalidBookingStartTimeError
 from tests.conftest import NOW, BookingFactory, FakeClock
+from tests.helpers import cases, domain_error
 
 
 def test_has_timezone() -> None:
@@ -24,7 +15,7 @@ def test_has_timezone() -> None:
     assert not has_timezone(datetime(2030, 1, 1))
 
 
-def test_valid_booking_is_created(make_booking: BookingFactory) -> None:
+def test_valid_booking_defaults(make_booking: BookingFactory) -> None:
     booking = make_booking()
     assert booking.status is BookingStatus.active
     assert booking.end - booking.start == timedelta(hours=1)
@@ -34,46 +25,33 @@ def test_title_is_optional(make_booking: BookingFactory) -> None:
     assert make_booking(title=None).title is None
 
 
-@pytest.mark.parametrize("duration", [MINIMUM_BOOKING_DURATION, MAXIMUM_BOOKING_DURATION])
-def test_duration_boundaries_are_inclusive(make_booking: BookingFactory, duration: timedelta) -> None:
-    booking = make_booking(duration=duration)
-    assert booking.end - booking.start == duration
+@pytest.mark.parametrize("sample", cases("booking_creation.json"))
+def test_booking_creation(make_booking: BookingFactory, sample: dict[str, Any]) -> None:
+    kwargs: dict[str, Any] = {"duration": timedelta(seconds=sample["duration_seconds"])}
+    if sample.get("naive_start"):
+        kwargs["start"] = datetime(2030, 1, 1, 10)
+    if "organizer_email" in sample:
+        kwargs["organizer_email"] = sample["organizer_email"]
+
+    expected_error = domain_error(sample["error"])
+    if expected_error is None:
+        booking = make_booking(**kwargs)
+        assert booking.end - booking.start == kwargs["duration"]
+    else:
+        with pytest.raises(expected_error):
+            make_booking(**kwargs)
 
 
-@pytest.mark.parametrize(
-    "duration",
-    [MINIMUM_BOOKING_DURATION - timedelta(seconds=1), MAXIMUM_BOOKING_DURATION + timedelta(seconds=1)],
-)
-def test_duration_outside_range_is_rejected(make_booking: BookingFactory, duration: timedelta) -> None:
-    with pytest.raises(InvalidBookingDurationError):
-        make_booking(duration=duration)
-
-
-@pytest.mark.parametrize("duration", [timedelta(0), timedelta(hours=-1)])
-def test_end_not_after_start_is_rejected(make_booking: BookingFactory, duration: timedelta) -> None:
-    with pytest.raises(InvalidBookingTimesError):
-        make_booking(duration=duration)
-
-
-def test_naive_datetimes_are_rejected(make_booking: BookingFactory) -> None:
-    with pytest.raises(InvalidBookingTimezoneError):
-        make_booking(start=datetime(2030, 1, 1, 10))
-
-
-def test_organizer_email_without_at_sign_is_rejected(make_booking: BookingFactory) -> None:
-    with pytest.raises(InvalidOrganizerEmailError, match="not-an-email"):
-        make_booking(organizer_email="not-an-email")
-
-
-def test_start_in_past_is_rejected(make_booking: BookingFactory, clock: FakeClock) -> None:
-    booking = make_booking(start=NOW - timedelta(minutes=1))
-    with pytest.raises(InvalidBookingStartTimeError):
+@pytest.mark.parametrize("sample", cases("booking_start_times.json"))
+def test_start_not_in_past_validation(
+    make_booking: BookingFactory, clock: FakeClock, sample: dict[str, Any]
+) -> None:
+    booking = make_booking(start=NOW + timedelta(seconds=sample["offset_seconds"]))
+    if sample["accepted"]:
         booking.validate_start_not_in_past(clock)
-
-
-@pytest.mark.parametrize("offset", [timedelta(0), timedelta(hours=1)])
-def test_start_now_or_future_is_accepted(make_booking: BookingFactory, clock: FakeClock, offset: timedelta) -> None:
-    make_booking(start=NOW + offset).validate_start_not_in_past(clock)
+    else:
+        with pytest.raises(InvalidBookingStartTimeError):
+            booking.validate_start_not_in_past(clock)
 
 
 def test_booking_is_immutable(make_booking: BookingFactory) -> None:

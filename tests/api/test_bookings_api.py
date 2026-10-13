@@ -12,6 +12,9 @@ from meeting_room_booking.infrastructure.in_memory import (
     InMemoryRoomsRepository,
 )
 from tests.conftest import NOW, BookingFactory
+from tests.helpers import cases, load_json
+
+TIME_FILTER = load_json("time_filter.json")
 
 
 async def test_get_booking_returns_booking(
@@ -46,8 +49,9 @@ async def test_get_unknown_booking_is_404(async_client: httpx.AsyncClient) -> No
     assert response.json() == {"detail": "Booking not found"}
 
 
-async def test_get_booking_with_invalid_id_is_422(async_client: httpx.AsyncClient) -> None:
-    assert (await async_client.get("/bookings/123")).status_code == 422
+@pytest.mark.parametrize("sample", cases("invalid_ids.json"))
+async def test_get_booking_with_invalid_id_is_422(async_client: httpx.AsyncClient, sample: dict[str, Any]) -> None:
+    assert (await async_client.get(f"/bookings/{sample['value']}")).status_code == 422
 
 
 @pytest.fixture
@@ -58,7 +62,7 @@ async def seeded_room(rooms_repo: InMemoryRoomsRepository, room: Room) -> Room:
 
 async def _seed(repo: InMemoryBookingsRepository, make_booking: BookingFactory, room: Room, n: int) -> None:
     for i in range(n):
-        await repo.add(make_booking(room_id=room.id, start=NOW + timedelta(hours=2 * i + 1)))
+        await repo.add(make_booking(room_id=room.id, start=NOW + timedelta(hours=i + 1)))
 
 
 async def test_list_room_bookings_sorted_and_excludes_cancelled(
@@ -78,42 +82,52 @@ async def test_list_room_bookings_sorted_and_excludes_cancelled(
     assert starts == sorted(starts)
 
 
+@pytest.mark.parametrize("sample", cases("pagination.json"))
 async def test_list_room_bookings_pagination(
     async_client: httpx.AsyncClient,
     bookings_repo: InMemoryBookingsRepository,
     make_booking: BookingFactory,
     seeded_room: Room,
+    sample: dict[str, Any],
 ) -> None:
-    await _seed(bookings_repo, make_booking, seeded_room, 5)
-    response = await async_client.get(f"/rooms/{seeded_room.id}/bookings", params={"limit": 2, "offset": 4})
-    body = response.json()
-    assert (body["total"], body["limit"], body["offset"], len(body["bookings"])) == (5, 2, 4, 1)
+    await _seed(bookings_repo, make_booking, seeded_room, sample["total"])
+    params = {"limit": sample["limit"], "offset": sample["offset"]}
+    body = (await async_client.get(f"/rooms/{seeded_room.id}/bookings", params=params)).json()
+    assert body["total"] == sample["total"]
+    assert body["limit"] == sample["limit"]
+    assert body["offset"] == sample["offset"]
+    assert len(body["bookings"]) == sample["expected_len"]
 
 
+@pytest.mark.parametrize("sample", cases("time_filter.json", key="cases"))
 async def test_list_room_bookings_time_filter(
     async_client: httpx.AsyncClient,
     bookings_repo: InMemoryBookingsRepository,
     make_booking: BookingFactory,
     seeded_room: Room,
+    sample: dict[str, Any],
 ) -> None:
-    await _seed(bookings_repo, make_booking, seeded_room, 3)  # 1h long, starting +1h, +3h, +5h
-    params = {"from": (NOW + timedelta(hours=2)).isoformat(), "to": (NOW + timedelta(hours=4)).isoformat()}
+    for hours in TIME_FILTER["booking_start_hours"]:
+        await bookings_repo.add(
+            make_booking(
+                room_id=seeded_room.id,
+                start=NOW + timedelta(hours=hours),
+                duration=timedelta(hours=TIME_FILTER["booking_duration_hours"]),
+            )
+        )
+    params: dict[str, str] = {}
+    if sample["from_hours"] is not None:
+        params["from"] = (NOW + timedelta(hours=sample["from_hours"])).isoformat()
+    if sample["to_hours"] is not None:
+        params["to"] = (NOW + timedelta(hours=sample["to_hours"])).isoformat()
+
     response = await async_client.get(f"/rooms/{seeded_room.id}/bookings", params=params)
-    assert response.json()["total"] == 1
+    assert response.json()["total"] == sample["expected_total"]
 
 
-@pytest.mark.parametrize(
-    "params",
-    [
-        {"limit": 0},
-        {"limit": 101},
-        {"offset": -1},
-        {"from": "2030-01-01T10:00:00"},  # naive datetime; AwareDatetime required
-        {"to": "garbage"},
-    ],
-)
+@pytest.mark.parametrize("sample", cases("invalid_list_query_params.json"))
 async def test_list_room_bookings_invalid_query_is_422(
-    async_client: httpx.AsyncClient, seeded_room: Room, params: dict[str, Any]
+    async_client: httpx.AsyncClient, seeded_room: Room, sample: dict[str, Any]
 ) -> None:
-    response = await async_client.get(f"/rooms/{seeded_room.id}/bookings", params=params)
+    response = await async_client.get(f"/rooms/{seeded_room.id}/bookings", params=sample["params"])
     assert response.status_code == 422

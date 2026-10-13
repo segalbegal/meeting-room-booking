@@ -1,0 +1,7 @@
+[
+  {"case": "limit-zero", "params": {"limit": 0}},
+  {"case": "limit-above-max", "params": {"limit": 101}},
+  {"case": "negative-offset", "params": {"offset": -1}},
+  {"case": "naive-from", "params": {"from": "2030-01-01T10:00:00"}},
+  {"case": "garbage-to", "params": {"to": "garbage"}}
+]

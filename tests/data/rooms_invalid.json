@@ -1,0 +1,4 @@
+[
+  {"case": "zero-capacity", "id": "a742fe6b-76d1-4a25-9104-309d8c6c251e", "name": "Bad", "capacity": 0},
+  {"case": "negative-capacity", "id": "5af6074e-3eca-4a8c-9f54-8a56a60ed940", "name": "Bad", "capacity": -1}
+]

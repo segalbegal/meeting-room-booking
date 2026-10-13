@@ -1,0 +1,5 @@
+[
+  {"case": "one-minute-ago", "offset_seconds": -60, "accepted": false},
+  {"case": "exactly-now", "offset_seconds": 0, "accepted": true},
+  {"case": "one-hour-ahead", "offset_seconds": 3600, "accepted": true}
+]

@@ -1,5 +1,8 @@
 from datetime import timedelta
+from typing import Any
 from uuid import uuid4
+
+import pytest
 
 from meeting_room_booking.domain.booking import BookingStatus
 from meeting_room_booking.domain.room import Room
@@ -8,6 +11,7 @@ from meeting_room_booking.infrastructure.in_memory import (
     InMemoryRoomsRepository,
 )
 from tests.conftest import NOW, BookingFactory
+from tests.helpers import cases
 
 
 async def test_rooms_add_get_and_list(room: Room) -> None:
@@ -47,15 +51,17 @@ async def test_active_for_room_filters_by_room_and_status(make_booking: BookingF
     assert await repo.get_active_for_room(room_id, None, None) == [mine]
 
 
-async def test_active_for_room_overlap_is_half_open(make_booking: BookingFactory) -> None:
+@pytest.mark.parametrize("sample", cases("repository_overlap.json"))
+async def test_active_for_room_overlap_window(make_booking: BookingFactory, sample: dict[str, Any]) -> None:
+    """Window bounds are seconds relative to the start of a one-hour booking."""
     repo = InMemoryBookingsRepository()
     room_id = uuid4()
     booking = make_booking(room_id=room_id, start=NOW + timedelta(hours=2), duration=timedelta(hours=1))
     await repo.add(booking)
 
-    # window ending exactly when booking starts / starting exactly when it ends: no overlap
-    assert await repo.get_active_for_room(room_id, None, booking.start) == []
-    assert await repo.get_active_for_room(room_id, booking.end, None) == []
-    # one-second overlap on either side
-    assert await repo.get_active_for_room(room_id, None, booking.start + timedelta(seconds=1)) == [booking]
-    assert await repo.get_active_for_room(room_id, booking.end - timedelta(seconds=1), None) == [booking]
+    def bound(key: str) -> object:
+        seconds = sample[key]
+        return None if seconds is None else booking.start + timedelta(seconds=seconds)
+
+    result = await repo.get_active_for_room(room_id, bound("from_seconds"), bound("to_seconds"))  # type: ignore[arg-type]
+    assert len(result) == sample["expected"]
