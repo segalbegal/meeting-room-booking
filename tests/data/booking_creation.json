@@ -1,0 +1,12 @@
+[
+  {"case": "one-hour", "duration_seconds": 3600, "error": null},
+  {"case": "minimum-duration", "duration_seconds": 900, "error": null},
+  {"case": "maximum-duration", "duration_seconds": 14400, "error": null},
+  {"case": "just-under-minimum", "duration_seconds": 899, "error": "InvalidBookingDurationError"},
+  {"case": "just-over-maximum", "duration_seconds": 14401, "error": "InvalidBookingDurationError"},
+  {"case": "zero-length", "duration_seconds": 0, "error": "InvalidBookingTimesError"},
+  {"case": "end-before-start", "duration_seconds": -3600, "error": "InvalidBookingTimesError"},
+  {"case": "naive-start", "duration_seconds": 3600, "naive_start": true, "error": "InvalidBookingTimezoneError"},
+  {"case": "email-without-at", "duration_seconds": 3600, "organizer_email": "not-an-email", "error": "InvalidOrganizerEmailError"},
+  {"case": "email-with-at", "duration_seconds": 3600, "organizer_email": "a@b", "error": null}
+]

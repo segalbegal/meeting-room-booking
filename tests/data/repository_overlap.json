@@ -1,0 +1,9 @@
+[
+  {"case": "no-bounds", "from_seconds": null, "to_seconds": null, "expected": 1},
+  {"case": "window-ends-when-booking-starts", "from_seconds": null, "to_seconds": 0, "expected": 0},
+  {"case": "window-starts-when-booking-ends", "from_seconds": 3600, "to_seconds": null, "expected": 0},
+  {"case": "window-ends-one-second-into-booking", "from_seconds": null, "to_seconds": 1, "expected": 1},
+  {"case": "window-starts-one-second-before-end", "from_seconds": 3599, "to_seconds": null, "expected": 1},
+  {"case": "window-contains-booking", "from_seconds": -600, "to_seconds": 4200, "expected": 1},
+  {"case": "window-entirely-before", "from_seconds": -7200, "to_seconds": -3600, "expected": 0}
+]

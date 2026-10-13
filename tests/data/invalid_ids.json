@@ -1,0 +1,5 @@
+[
+  {"case": "not-a-uuid", "value": "not-a-uuid"},
+  {"case": "number", "value": "123"},
+  {"case": "truncated-uuid", "value": "a742fe6b-76d1-4a25-9104"}
+]

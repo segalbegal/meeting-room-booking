@@ -1,0 +1,9 @@
+[
+  {"case": "first-page", "total": 5, "limit": 2, "offset": 0, "expected_len": 2},
+  {"case": "middle-page", "total": 5, "limit": 2, "offset": 2, "expected_len": 2},
+  {"case": "partial-last-page", "total": 5, "limit": 2, "offset": 4, "expected_len": 1},
+  {"case": "limit-equals-total", "total": 5, "limit": 5, "offset": 0, "expected_len": 5},
+  {"case": "limit-above-total", "total": 3, "limit": 50, "offset": 0, "expected_len": 3},
+  {"case": "offset-beyond-total", "total": 2, "limit": 10, "offset": 10, "expected_len": 0},
+  {"case": "empty", "total": 0, "limit": 10, "offset": 0, "expected_len": 0}
+]

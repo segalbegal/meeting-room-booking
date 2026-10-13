@@ -1,0 +1,6 @@
+[
+  {"case": "typical", "id": "a742fe6b-76d1-4a25-9104-309d8c6c251e", "name": "Everest", "capacity": 12},
+  {"case": "minimum-capacity", "id": "5af6074e-3eca-4a8c-9f54-8a56a60ed940", "name": "Fuji", "capacity": 1},
+  {"case": "large-capacity", "id": "09f2d8d5-f8c2-47c3-bfb3-9ef532650b3a", "name": "Auditorium", "capacity": 500},
+  {"case": "empty-name", "id": "954cd755-d54b-493e-a0ab-020e93d9b37c", "name": "", "capacity": 4}
+]
