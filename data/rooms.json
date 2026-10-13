@@ -1,0 +1,27 @@
+[
+  {
+    "id": "a742fe6b-76d1-4a25-9104-309d8c6c251e",
+    "name": "Everest",
+    "capacity": 12
+  },
+  {
+    "id": "5af6074e-3eca-4a8c-9f54-8a56a60ed940",
+    "name": "Kilimanjaro",
+    "capacity": 8
+  },
+  {
+    "id": "09f2d8d5-f8c2-47c3-bfb3-9ef532650b3a",
+    "name": "Denali",
+    "capacity": 6
+  },
+  {
+    "id": "954cd755-d54b-493e-a0ab-020e93d9b37c",
+    "name": "Elbrus",
+    "capacity": 4
+  },
+  {
+    "id": "83296e9f-5866-4a63-9c3b-dd1926d9990a",
+    "name": "Fuji",
+    "capacity": 2
+  }
+]
